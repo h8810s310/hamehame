@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>よねよう ずけい クイズ！たいかい</title>
+<style>
+body { font-family: sans-serif; text-align: center; background: #f9f9f9; margin: 0; padding: 20px; }
+#timer { font-size: 32px; margin: 20px; }
+.shape-container { margin: 20px auto; display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; max-width: 600px; }
+.shape { display: flex; align-items: center; justify-content: center; width: 220px; height: 220px; font-size: 96px; background: #77dd77; color: white; cursor: pointer; border-radius: 10px; transform-origin: center; font-weight: bold; margin: auto; }
+#question { font-size: 48px; font-weight: bold; color: red; margin-bottom: 20px; }
+#score { font-size: 28px; margin-top: 20px; color: #444; }
+#correctMessage { font-size: 48px; color: green; margin-top: 20px; display: none; }
+.stageBtn { padding: 10px 20px; font-size: 20px; cursor: pointer; margin: 5px; width: 150px; }
+.stage-info { font-size: 14px; color: #333; margin-top: 5px; display: block; }
+.stage-group { margin: 15px 0; }
+#stageArea { margin-bottom: 30px; }
+#backBtn { padding: 10px 20px; font-size: 24px; cursor: pointer; margin: 20px; }
+</style>
+</head>
+<body>
+<h1>よねよう ずけい クイズ！たいかい</h1>
+<div id="timer">残り時間: 120秒</div>
+<p id="question">段階をえらんでね</p>
+<div id="stageArea">
+  <div class="stage-group">
+    <button class="stageBtn" data-stage="1">第1段階</button>
+    <span class="stage-info">まる・さんかく・しかく・つき・ほし</span>
+  </div>
+  <div class="stage-group">
+    <button class="stageBtn" data-stage="2">第2段階</button>
+    <span class="stage-info">せいほうけい・ちょうほうけい</span>
+  </div>
+  <div class="stage-group">
+    <button class="stageBtn" data-stage="3">第3段階</button>
+    <span class="stage-info">まる・さんかく・せいほうけい・ちょうほうけい</span>
+  </div>
+  <div class="stage-group">
+    <button class="stageBtn" data-stage="4">第4段階</button>
+    <span class="stage-info">せいほうけい・ちょうほうけい・ごかっけい・ろくかっけい</span>
+  </div>
+  <div class="stage-group">
+    <button class="stageBtn" data-stage="5">第5段階</button>
+    <span class="stage-info">ごかっけい・ろくかっけい・はちかっけい</span>
+  </div>
+  <div class="stage-group">
+    <button class="stageBtn" data-stage="6">第6段階</button>
+    <span class="stage-info">まる・さんかく・せいほうけい・ちょうほうけい・ごかっけい・ろくかっけい・はちかっけい</span>
+  </div>
+</div>
+<div class="shape-container" id="shapes"></div>
+<div id="score">得点: 0</div>
+<div id="correctMessage">せいかい！</div>
+<button id="backBtn" style="display:none;">トップにもどる</button>
+<script>
+const allShapes = [
+  { name: 'まる', symbol: '○' },
+  { name: 'さんかく', symbol: '△' },
+  { name: 'しかく', symbol: '■' },
+  { name: 'せいほうけい', symbol: '■' },
+  { name: 'ちょうほうけい', symbol: '▭' },
+  { name: 'ほし', symbol: '☆' },
+  { name: 'つき', symbol: '☽' },
+  { name: 'ごかっけい', symbol: '⬟' },
+  { name: 'ろくかっけい', symbol: '⬢' },
+  { name: 'はちかっけい', symbol: '⯃' }
+];
+let currentStage = 1, correctShape, timer = 120, intervalId, points = 0;
+const speak = txt => { const u = new SpeechSynthesisUtterance(txt); speechSynthesis.speak(u); };
+const updateScore = () => { document.getElementById("score").innerHTML = `得点: ${points}`; };
+const getShapesForStage = () => {
+  if (currentStage === 1) return allShapes.filter(s => ['まる','さんかく','しかく','つき','ほし'].includes(s.name));
+  if (currentStage === 2) return allShapes.filter(s => ['せいほうけい','ちょうほうけい'].includes(s.name));
+  if (currentStage === 3) return allShapes.filter(s => ['まる','さんかく','せいほうけい','ちょうほうけい'].includes(s.name));
+  if (currentStage === 4) return allShapes.filter(s => ['せいほうけい','ちょうほうけい','ごかっけい','ろくかっけい'].includes(s.name));
+  if (currentStage === 5) return allShapes.filter(s => ['ごかっけい','ろくかっけい','はちかっけい'].includes(s.name));
+  return allShapes.filter(s => ['まる','さんかく','せいほうけい','ちょうほうけい','ごかっけい','ろくかっけい','はちかっけい'].includes(s.name));
+};
+const generateQuestion = () => {
+  const shapesArea = document.getElementById("shapes"); shapesArea.innerHTML = "";
+  const options = getShapesForStage().sort(() => 0.5 - Math.random()).slice(0, 4);
+  correctShape = options[Math.floor(Math.random() * options.length)];
+  document.getElementById("question").textContent = correctShape.name;
+  speak(correctShape.name);
+  options.forEach(shape => {
+    const div = document.createElement("div"); div.className = "shape"; div.textContent = shape.symbol;
+    div.style.transform = `rotate(${Math.random() * 360}deg)`;
+    div.onclick = () => checkAnswer(shape.name);
+    shapesArea.appendChild(div);
+  });
+};
+const checkAnswer = name => { if (name === correctShape.name) { points++; updateScore(); showCorrectMessage(); } };
+const showCorrectMessage = () => {
+  document.getElementById("shapes").innerHTML = "";
+  document.getElementById("correctMessage").style.display = "block";
+  setTimeout(() => { document.getElementById("correctMessage").style.display = "none"; generateQuestion(); }, 500);
+};
+const startStage = stage => {
+  currentStage = stage; points = 0; timer = 120;
+  document.getElementById("stageArea").style.display = "none";
+  document.getElementById("backBtn").style.display = "none";
+  updateScore(); generateQuestion();
+  intervalId = setInterval(() => {
+    timer--;
+    document.getElementById("timer").textContent = `残り時間: ${timer}秒`;
+    if (timer <= 0) { clearInterval(intervalId); showResult(); }
+  }, 1000);
+};
+const showResult = () => {
+  document.getElementById("shapes").innerHTML = "";
+  document.getElementById("question").innerHTML = "終了";
+  document.getElementById("score").innerHTML = `あなたの得点は <strong>${points}点</strong>！<br><span style='font-size:32px;color:green;'>よくできました！</span>`;
+  document.getElementById("backBtn").style.display = "inline-block";
+  speak(`終了。得点は ${points} 点。よくできました。`);
+};
+document.querySelectorAll(".stageBtn").forEach(btn => btn.addEventListener("click", () => startStage(parseInt(btn.dataset.stage))));
+document.getElementById("backBtn").addEventListener("click", () => {
+  document.getElementById("stageArea").style.display = "block";
+  document.getElementById("shapes").innerHTML = "";
+  document.getElementById("question").innerHTML = "段階をえらんでね";
+  document.getElementById("score").innerHTML = "得点: 0";
+  document.getElementById("backBtn").style.display = "none";
+});
+</script>
+</body>
+</html>
